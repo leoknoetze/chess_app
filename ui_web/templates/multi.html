@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Multiplayer Chess</title>
+  <style>
+    :root { --sq:64px; --light:#eedcc6; --dark:#7a5230; --hl-move:rgba(255,215,0,.75); --hl-sel:rgba(80,160,255,.75); --text:#222; }
+    html, body { height: 100%; margin: 0; }
+    body { font-family: Arial, sans-serif; color: var(--text); display: grid; place-items: start center; gap: 12px; padding: 16px; }
+    #hud, #lobby { display:flex; gap:8px; align-items:center; flex-wrap:wrap; max-width:680px; }
+    #status { font-weight: bold; }
+    button { padding:6px 12px; cursor:pointer; border:1px solid #444; background:#f8f8f8; }
+    button:hover { background:#eee; }
+    #wrap { display:grid; grid-template-columns:auto; gap:10px; justify-items:center; width:100%; }
+    #board { display:grid; grid-template-columns:repeat(8,var(--sq)); grid-template-rows:repeat(8,var(--sq));
+             border:2px solid #333; user-select:none; width:calc(var(--sq)*8); height:calc(var(--sq)*8); background:#0001; }
+    .sq { width:var(--sq); height:var(--sq); display:grid; place-items:center; font-size:40px; cursor:pointer; }
+    .light { background:var(--light); } .dark { background:var(--dark); color:white; }
+    .sel { box-shadow: inset 0 0 0 4px var(--hl-sel); } .target { box-shadow: inset 0 0 0 4px var(--hl-move); }
+    .check { outline: 4px solid #e53935; outline-offset: -4px; }
+    #timers { display:flex; gap:10px; align-items:center; }
+    .timer { padding:6px 10px; border:1px solid #444; border-radius:6px; min-width:110px; text-align:center; font-weight:bold; }
+    .timer.w { background:#fff; }
+    .timer.b { background:#222; color:#fff; }
+    .code { font-family: Consolas, monospace; padding: 2px 6px; border:1px dashed #666; }
+  </style>
+</head>
+<body>
+  <div id="wrap">
+    <div id="lobby">
+      <button id="createBtn" type="button">Create (5+0)</button>
+      <label>Room:</label><input id="roomInput" placeholder="ABC123" maxlength="6" style="text-transform:uppercase">
+      <button id="joinBtn" type="button">Join</button>
+      <span>My color: <b id="myColor">-</b></span>
+      <span>Room code: <span class="code" id="roomCode">-</span></span>
+      <button id="startBtn" type="button">Start</button>
+      <button id="pauseBtn" type="button">Pause</button>
+      <button id="resetBtn" type="button">Reset</button>
+      <span id="status">Status: Waiting</span>
+    </div>
+
+    <div id="timers">
+      <div class="timer w" id="tw">White: <span id="twv">05:00</span></div>
+      <div class="timer b" id="tb">Black: <span id="tbv">05:00</span></div>
+    </div>
+
+    <div id="board" aria-label="Chessboard"></div>
+  </div>
+
+ <script src="https://cdn.socket.io/4.7.5/socket.io.min.js" crossorigin="anonymous"></script>
+  <script>
+    // --- Board helpers (same as single-player) ---
+    const pieceMap = {'P':'♙','N':'♘','B':'♗','R':'♖','Q':'♕','K':'♔','p':'♟','n':'♞','b':'♝','r':'♜','q':'♛','k':'♚'};
+    function fenToBoard(fen){const rows=fen.split(' ')[0].split('/');const b=[];for(const row of rows){const out=[];for(const ch of row){if(/[1-8]/.test(ch))out.push(...Array(parseInt(ch)).fill(' '));else out.push(pieceMap[ch]||' ');}b.push(out);}return b;}
+    const files=['a','b','c','d','e','f','g','h']; function idxToSquare(r,c){return files[c]+String(8-r);}
+    const boardEl=document.getElementById('board'); const statusEl=document.getElementById('status'); const myColorEl=document.getElementById('myColor'); const roomCodeEl=document.getElementById('roomCode');
+    function renderBoard(f){boardEl.innerHTML='';const g=fenToBoard(f);for(let r=0;r<8;r++){for(let c=0;c<8;c++){const div=document.createElement('div');div.className='sq '+((r+c)%2===0?'light':'dark');div.dataset.square=idxToSquare(r,c);div.textContent=g[r][c];boardEl.appendChild(div);}}}
+    function fmt(ms){if(ms==null)return'--:--';ms=Math.max(0,Math.floor(ms));const s=Math.floor(ms/1000);const m=Math.floor(s/60);const r=s%60;return`${String(m).padStart(2,'0')}:${String(r).padStart(2,'0')}`;}
+    function renderClocks(c){if(!c)return;document.getElementById('twv').textContent=fmt(c.w_ms);document.getElementById('tbv').textContent=fmt(c.b_ms);}
+
+    // --- Flags state ---
+    let gameOver=false; let myColor='s'; let room=null; let selected=null; let legalTargets=new Set();
+
+    function applyFlags(flags){
+      gameOver=!!(flags&&flags.game_over);
+      document.querySelectorAll('#board .sq').forEach(el=>el.classList.remove('check'));
+      if(flags&&flags.check&&flags.check_square){const el=document.querySelector(`#board [data-square="${flags.check_square}"]`); if(el) el.classList.add('check');}
+      if(flags){ if(flags.mate){statusEl.textContent='Status: Checkmate';} else if(flags.game_over){statusEl.textContent=`Status: Game Over${flags.result?' ('+flags.result+')':''}`;} else if(flags.check){statusEl.textContent='Status: Check';}}
+    }
+
+    // --- Socket.IO ---
+    const ioOpts = { path: '/socket.io', transports: ['websocket','polling'] };
+    const socket = io('/mp', ioOpts);
+
+    socket.on('created', ({room:code, color, state})=>{
+      room = code; roomCodeEl.textContent=code; myColor=color; myColorEl.textContent=color.toUpperCase();
+      renderBoard(state.fen); renderClocks(state.clocks); applyFlags(state.flags);
+    });
+
+    socket.on('joined', ({room:code, color, state})=>{
+      room = code; roomCodeEl.textContent=code; myColor=color; myColorEl.textContent=color.toUpperCase();
+      renderBoard(state.fen); renderClocks(state.clocks); applyFlags(state.flags);
+      statusEl.textContent='Status: Joined';
+    });
+
+    socket.on('state', (st)=>{
+      if (!room || st.room !== room) return;
+      renderBoard(st.fen); renderClocks(st.clocks); applyFlags(st.flags);
+      if(st.clocks && st.clocks.flagged){ gameOver=true; statusEl.textContent='Status: Game Over (time)'; }
+    });
+
+    socket.on('illegal', ({move})=>{
+      alert('Illegal move: ' + move);
+    });
+
+    // --- Lobby buttons ---
+    document.getElementById('createBtn').addEventListener('click', ()=>{
+      socket.emit('create', {minutes:5, increment:0});
+    });
+    document.getElementById('joinBtn').addEventListener('click', ()=>{
+      const code = document.getElementById('roomInput').value.trim().toUpperCase();
+      if (!code) return alert('Enter room code');
+      socket.emit('join', {room: code});
+    });
+    document.getElementById('startBtn').addEventListener('click', ()=>{
+      if(!room) return alert('Create or join first');
+      socket.emit('start', {room});
+      statusEl.textContent='Status: Started';
+    });
+    document.getElementById('pauseBtn').addEventListener('click', ()=>{
+      if(!room) return;
+      socket.emit('pause', {room});
+      statusEl.textContent='Status: Paused';
+    });
+    document.getElementById('resetBtn').addEventListener('click', ()=>{
+      if(!room) return;
+      socket.emit('reset', {room});
+      statusEl.textContent='Status: Reset';
+      gameOver=false;
+    });
+
+    // --- Basic client-side legal hints via server (/legal still uses local single-player); for MP we just try move ---
+    boardEl.addEventListener('click', async (e)=>{
+      if(gameOver) return;
+      if(!room) return alert('Create or join a room first');
+      const el = e.target.closest('.sq'); if(!el) return;
+      const sq = el.dataset.square;
+
+      if(!selected){ selected = sq; el.classList.add('sel'); return; }
+      const dest = sq;
+      const uci = selected + dest;
+      selected = null; document.querySelectorAll('.sq').forEach(x=>x.classList.remove('sel','target'));
+      socket.emit('move', {room, move: uci});
+    });
+
+    // initial empty board
+    renderBoard("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+  </script>
+</body>
+</html>
