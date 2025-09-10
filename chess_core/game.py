@@ -40,6 +40,15 @@ class ChessGame:
             return True
         return False
 
+    def san_move_list(self) -> list[str]:
+        """Return SAN strings for all moves in the current game (from the start)."""
+        temp = chess.Board()
+        sans = []
+        for mv in self.board.move_stack:
+            sans.append(temp.san(mv))
+            temp.push(mv)
+        return sans
+
     # ----------------------- Status / Flags -----------------------
     def status_flags(self) -> dict:
         """

@@ -223,6 +223,15 @@ def ai_play():
     return jsonify({"success": True, "fen": new_fen, "ai": result})
 
 
+# ui_web/app.py  (add this route)
+@app.route("/movelist")
+def movelist():
+    try:
+        return jsonify({"success": True, "moves": game.san_move_list()})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 200
+
+
 # ---------- Reviewer ----------
 @app.route("/review", methods=["POST"])
 def review_endpoint():

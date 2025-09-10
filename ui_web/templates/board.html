@@ -2,101 +2,197 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Web Chess — No External Libs + AI</title>
+  <title>Web Chess — Pro UI</title>
   <style>
-    :root { --sq:64px; --light:#eedcc6; --dark:#7a5230; --hl-move:rgba(255,215,0,.75); --hl-sel:rgba(80,160,255,.75); --text:#222; }
-    html, body { height: 100%; margin: 0; }
-    body { font-family: Arial, sans-serif; color: var(--text); display: grid; place-items: start center; gap: 12px; padding: 16px; }
-    #hud { display:flex; gap:8px; align-items:center; flex-wrap:wrap; max-width:680px; }
-    #status { font-weight: bold; }
-    button { padding:6px 12px; cursor:pointer; border:1px solid #444; background:#f8f8f8; }
-    button:hover { background:#eee; }
-    #wrap { display:grid; grid-template-columns:auto; gap:10px; justify-items:center; width:100%; }
-    #board { display:grid; grid-template-columns:repeat(8,var(--sq)); grid-template-rows:repeat(8,var(--sq));
-             border:2px solid #333; user-select:none; width:calc(var(--sq)*8); height:calc(var(--sq)*8); background:#0001; }
-    .sq { width:var(--sq); height:var(--sq); display:grid; place-items:center; font-size:40px; cursor:pointer; }
-    .light { background:var(--light); } .dark { background:var(--dark); color:white; }
-    .sel { box-shadow: inset 0 0 0 4px var(--hl-sel); } .target { box-shadow: inset 0 0 0 4px var(--hl-move); }
-    .check { outline: 4px solid #e53935; outline-offset: -4px; } /* king in check */
-    #analysis, #io, #review { max-width:680px; border:1px solid #ddd; padding:10px; border-radius:6px; width:100%; }
-    #analysis .muted { opacity:.7; }
-    textarea { width:100%; font-family: Consolas, monospace; }
-    label { display:block; margin-top:6px; }
-    #io h3 { margin:0 0 8px 0; } #io .row { display:grid; grid-template-columns:1fr; gap:8px; }
+    :root {
+      --sq: 72px;
+      --light: #f0d9b5;
+      --dark:  #b58863;
+      --panel: #f8fafc;
+      --text: #1f2937;
+      --muted: #64748b;
+      --sel: rgba(80,160,255,.65);
+      --tgt: rgba(255,215,0,.65);
+      --black-piece: #111;
+      --white-piece: #fff;
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; background: #f2f4f7; color: var(--text); font-family: system-ui, -apple-system, "Segoe UI", Arial, sans-serif; }
+    a { color: inherit; text-decoration: none; }
+    button { cursor: pointer; border: 1px solid #cbd5e1; background: white; padding: 6px 12px; border-radius: 8px; }
+    button:hover { background: #f1f5f9; }
+    textarea { width: 100%; font-family: Consolas, monospace; }
 
-    /* Timers */
-    #timers { display:flex; gap:10px; align-items:center; }
-    .timer { padding:6px 10px; border:1px solid #444; border-radius:6px; min-width:110px; text-align:center; font-weight:bold; }
-    .timer.w { background:#fff; }
-    .timer.b { background:#222; color:#fff; }
-    .small { font-size: 12px; opacity: .8; }
+    /* Header */
+    .header { display:flex; justify-content:space-between; align-items:center; padding:16px; max-width:1200px; margin:0 auto; }
+    .left { display:flex; align-items:center; gap:8px; }
+    .title { font-weight:700; letter-spacing:.3px; }
+    .badge { padding:2px 8px; background:#eef2ff; border:1px solid #c7d2fe; color:#4338ca; border-radius:999px; font-size:12px; }
+
+    /* Main area: board + sidebar (no grey gap) */
+    #wrap { display:flex; gap:20px; justify-content:center; align-items:flex-start; padding:0 16px 24px; max-width:1200px; margin:0 auto; }
+    #board {
+      display:grid;
+      grid-template-columns:repeat(8,var(--sq));
+      grid-template-rows:repeat(8,var(--sq));
+      border:2px solid #334155;
+      border-radius:10px;
+      overflow:hidden;
+      background:#0002;
+      user-select:none;
+      flex-shrink:0;
+    }
+    .sq { width:var(--sq); height:var(--sq); display:grid; place-items:center; font-size:44px; }
+    .light { background:var(--light); }
+    .dark  { background:var(--dark); }
+    .sel   { outline:4px solid var(--sel); outline-offset:-4px; }
+    .target{ outline:4px solid var(--tgt); outline-offset:-4px; }
+    .check { outline:4px solid #e11d48; outline-offset:-4px; }
+
+    /* Piece color fix per piece (uppercase=white, lowercase=black) */
+    .pw { color: var(--white-piece); text-shadow: 0 0 1px #0008; }
+    .pb { color: var(--black-piece); }
+
+    /* Sidebar */
+    .sidebar { width:360px; display:grid; gap:12px; }
+    .card { background:var(--panel); border:1px solid #e2e8f0; border-radius:12px; padding:12px; }
+    .row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+    .label { font-size:12px; color:var(--muted); }
+    .timers { display:flex; gap:10px; }
+    .timer { flex:1; padding:8px 10px; border:1px solid #cbd5e1; border-radius:10px; background:white; display:flex; align-items:center; justify-content:space-between; font-weight:700; }
+    select { padding:6px 10px; border-radius:8px; border:1px solid #cbd5e1; background:white; }
+
+    /* Eval bar */
+    .eval { background:white; border:1px solid #cbd5e1; border-radius:10px; padding:10px; }
+    .bar { position:relative; height:16px; border-radius:999px; background:linear-gradient(to right,#111 50%,#fff 50%); overflow:hidden; }
+    .fill{ position:absolute; inset:0 auto 0 0; width:50%; background:linear-gradient(to right,#111,#4b5563,#94a3b8,#e2e8f0,#fff); transition:width .25s ease; }
+    .eval-note{ font-size:12px; color:var(--muted); margin-top:6px; }
+    .eval-num{ font-variant-numeric:tabular-nums; font-weight:700; }
+
+    /* Move list */
+    .moves { background:white; border:1px solid #cbd5e1; border-radius:10px; padding:10px; max-height:240px; overflow:auto; }
+    .moves ol { margin:0; padding-left:20px; }
+    .moves li { margin:2px 0; }
+    .current { background:#eef2ff; }
+
+    /* Promotion picker overlay */
+    .promote-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,.35);
+      display: none; align-items: center; justify-content: center;
+      z-index: 9999;
+    }
+    .promote-box {
+      background: #fff; border: 1px solid #cbd5e1; border-radius: 12px;
+      padding: 10px; display: flex; gap: 8px;
+      box-shadow: 0 10px 30px rgba(0,0,0,.15);
+    }
+    .promote-btn {
+      width: 56px; height: 56px; display: grid; place-items: center;
+      font-size: 34px; border: 1px solid #cbd5e1; border-radius: 10px;
+      cursor: pointer; background: #f8fafc;
+    }
+    .promote-btn:hover { background:#eef2ff; }
   </style>
 </head>
 <body>
-  <div id="wrap">
-    <div id="hud">
-  <span id="status">Status: {{ status }}</span>
-
-  <!-- single-player controls -->
-  <button id="resetBtn" type="button">Reset</button>
-  <button id="suggestBtn" type="button">Suggest Move</button>
-  <button id="aiMoveBtn" type="button">AI Move</button>
-
-  <!-- navigation to multiplayer -->
-  <a href="/multi" style="text-decoration:none;">
-    <button type="button">Multiplayer ▶</button>
-  </a>
-</div>
-
-
-    <div id="timers">
-      <div class="timer w" id="tw">White: <span id="twv">05:00</span></div>
-      <div class="timer b" id="tb">Black: <span id="tbv">05:00</span></div>
-      <span class="small">Time control:</span>
-      <select id="tcPreset">
-        <option value="5,0">5+0</option>
-        <option value="10,0">10+0</option>
-        <option value="15,10">15+10</option>
-        <option value="3,2">3+2</option>
-      </select>
-      <button id="applyTcBtn" type="button">Apply</button>
-      <button id="startClkBtn" type="button">Start</button>
-      <button id="pauseClkBtn" type="button">Pause</button>
+  <div class="header">
+    <div class="left">
+      <span class="title">Web Chess</span>
+      <span class="badge">M7 UI</span>
     </div>
+    <div class="row">
+      <a href="/multi"><button>Multiplayer ▶</button></a>
+    </div>
+  </div>
 
+  <div id="wrap">
+    <!-- Board -->
     <div id="board" aria-label="Chessboard"></div>
 
-    <div id="analysis">
-      <strong>Analysis</strong>
-      <div class="muted">Click “Suggest Move” or “AI Move”. If Stockfish isn’t found, you’ll see a friendly message.</div>
-    </div>
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="card"><strong>Status:</strong> <span id="status">{{ status }}</span></div>
 
-    <div id="io">
-      <h3>Import / Export</h3>
-      <div class="row">
-        <label for="fenInput"><b>FEN</b> (paste a position string):</label>
-        <textarea id="fenInput" rows="2" placeholder="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"></textarea>
-        <div>
-          <button id="loadFenBtn" type="button">Load FEN</button>
-          <button id="copyFenBtn" type="button">Copy Current FEN</button>
+      <div class="card timers">
+        <div class="timer"><span class="label">White</span><span id="twv">05:00</span></div>
+        <div class="timer"><span class="label">Black</span><span id="tbv">05:00</span></div>
+      </div>
+
+      <div class="card row">
+        <select id="tcPreset">
+          <option value="5,0">5+0</option>
+          <option value="10,0">10+0</option>
+          <option value="15,10">15+10</option>
+          <option value="3,2">3+2</option>
+        </select>
+        <button id="applyTcBtn">Apply</button>
+        <button id="startClkBtn">Start</button>
+        <button id="pauseClkBtn">Pause</button>
+        <button id="resetBtn">Reset</button>
+      </div>
+
+      <div class="eval">
+        <div class="row" style="justify-content:space-between;">
+          <div><b>Evaluation</b> <span class="eval-num" id="evalNum">0.00</span></div>
+          <button id="refreshEvalBtn" title="Quick analyze current position">Analyze</button>
+        </div>
+        <div class="bar"><div class="fill" id="evalFill" style="width:50%"></div></div>
+        <div class="eval-note">Left = Black advantage, Right = White advantage.</div>
+      </div>
+
+      <div class="moves">
+        <b>Moves</b>
+        <ol id="moveList"></ol>
+      </div>
+
+      <!-- Import / Export -->
+      <div class="card">
+        <b>Import / Export</b>
+        <div class="label" style="margin-top:6px;">FEN</div>
+        <textarea id="fenInput" rows="2" placeholder="FEN string here"></textarea>
+        <div class="row" style="margin-top:6px;">
+          <button id="loadFenBtn">Load FEN</button>
+          <button id="copyFenBtn">Copy Current FEN</button>
         </div>
 
-        <label for="pgnInput"><b>PGN</b> (paste a full game, e.g., from chess.com export):</label>
-        <textarea id="pgnInput" rows="8" placeholder='[Event "Live Chess"]&#10;1. e4 e5 2. Nf3 Nc6 ...'></textarea>
-        <div>
-          <button id="loadPgnBtn" type="button">Load PGN</button>
+        <div class="label" style="margin-top:10px;">PGN (e.g., paste from chess.com export)</div>
+        <textarea id="pgnInput" rows="6" placeholder='[Event "Live Chess"]&#10;1. e4 e5 2. Nf3 Nc6 ...'></textarea>
+        <div class="row" style="margin-top:6px;">
+          <button id="loadPgnBtn">Load PGN</button>
           <a id="downloadPgnLink" href="/export_pgn"><button type="button">Download Current PGN</button></a>
         </div>
-        <div style="margin-top:8px;">
-          <button id="reviewPgnBtn" type="button">Review PGN (from box)</button>
-          <button id="reviewCurrentBtn" type="button">Review Current Game</button>
+      </div>
+
+      <!-- Reviewer -->
+      <div class="card" id="review">
+        <b>Game Review</b>
+        <div class="label">Review pasted PGN or the current game.</div>
+        <div class="row" style="margin-top:6px;">
+          <button id="reviewPgnBtn">Review PGN (from box)</button>
+          <button id="reviewCurrentBtn">Review Current Game</button>
+        </div>
+        <div id="reviewOut" style="margin-top:8px; max-height:280px; overflow:auto; background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:10px;"></div>
+      </div>
+
+      <!-- Analysis (best move line) -->
+      <div class="card" id="analysis">
+        <strong>Analysis</strong>
+        <div class="label">Use Suggest/AI Move or Analyze.</div>
+        <div class="row" style="margin-top:6px;">
+          <button id="suggestBtn">Suggest Move</button>
+          <button id="aiMoveBtn">AI Move</button>
         </div>
       </div>
     </div>
+  </div>
 
-    <div id="review">
-      <h3>Review</h3>
-      <div class="muted">Run a review to see per-move feedback.</div>
+  <!-- Promotion overlay -->
+  <div id="promoteOverlay" class="promote-overlay" role="dialog" aria-modal="true">
+    <div class="promote-box">
+      <button class="promote-btn" data-piece="q" title="Promote to Queen">♕</button>
+      <button class="promote-btn" data-piece="r" title="Promote to Rook">♖</button>
+      <button class="promote-btn" data-piece="b" title="Promote to Bishop">♗</button>
+      <button class="promote-btn" data-piece="n" title="Promote to Knight">♘</button>
     </div>
   </div>
 
@@ -104,226 +200,327 @@
     // ---------- Helpers ----------
     const pieceMap = {'P':'♙','N':'♘','B':'♗','R':'♖','Q':'♕','K':'♔','p':'♟','n':'♞','b':'♝','r':'♜','q':'♛','k':'♚'};
     const files = ['a','b','c','d','e','f','g','h'];
-    function idxToSquare(r, c) { return files[c] + String(8 - r); }
-    function fenToBoard(fen) {
-      const rows = fen.split(' ')[0].split('/'); const board = [];
-      for (const row of rows) { const out = [];
-        for (const ch of row) { if (/[1-8]/.test(ch)) out.push(...Array(parseInt(ch)).fill(' ')); else out.push(pieceMap[ch] || ' '); }
-        board.push(out);
-      }
-      return board;
-    }
-    function fmt(ms) {
-      if (ms == null) return '--:--';
-      ms = Math.max(0, Math.floor(ms));
-      const s = Math.floor(ms / 1000), m = Math.floor(s / 60), r = s % 60;
-      return `${String(m).padStart(2,'0')}:${String(r).padStart(2,'0')}`;
+    function idxToSquare(r,c){return files[c]+String(8-r);}
+    function fmt(ms){ if(ms==null)return'--:--'; ms=Math.max(0,Math.floor(ms)); const s=Math.floor(ms/1000), m=Math.floor(s/60), r=s%60; return `${String(m).padStart(2,'0')}:${String(r).padStart(2,'0')}`; }
+    function renderClocks(c){ if(!c)return; document.getElementById('twv').textContent=fmt(c.w_ms); document.getElementById('tbv').textContent=fmt(c.b_ms); }
+    function cpToRatio(cp){ const x=Math.max(-800,Math.min(800,cp)); return 1/(1+Math.exp(-x/150)); }
+    function setEval(val){
+      const fill=document.getElementById('evalFill'), num=document.getElementById('evalNum');
+      if(val==null){ fill.style.width='50%'; num.textContent='0.00'; return; }
+      if(typeof val==='object' && val.type==='mate'){ fill.style.width = (val.value>=0?'99.5%':'0.5%'); num.textContent = `#${val.value}`; return; }
+      const r=cpToRatio(Number(val)||0); fill.style.width=`${(r*100).toFixed(1)}%`; num.textContent=((Number(val)||0)/100).toFixed(2);
     }
 
-    // ---------- DOM ----------
-    const boardEl = document.getElementById('board');
+    // ---------- DOM & State ----------
+    const boardEl  = document.getElementById('board');
     const statusEl = document.getElementById('status');
+    const moveListEl = document.getElementById('moveList');
     const analysisEl = document.getElementById('analysis');
+    const reviewOut = document.getElementById('reviewOut');
+    const overlay = document.getElementById('promoteOverlay');
 
-    // ---------- State ----------
-    let fen = "{{ fen }}";
-    if (!fen || fen.indexOf('/') === -1) fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-    let gameOver = false;
-    let selected = null;
-    let legalTargets = new Set();
-    let pollId = null;
+    let fen = "{{ fen }}"; if(!fen || fen.indexOf('/')===-1) fen="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+    let gameOver = false, selected = null, legalTargets = new Set(), pollId = null;
+
+    // Track piece letters (for promotion detection)
+    let letterBoard = [];
+    function buildLetterBoard(f) {
+      letterBoard = [];
+      const rows = f.split(' ')[0].split('/');
+      for (const row of rows) {
+        const out = [];
+        for (const ch of row) {
+          if (/[1-8]/.test(ch)) out.push(...Array(parseInt(ch,10)).fill(' '));
+          else out.push(ch);
+        }
+        letterBoard.push(out);
+      }
+    }
+    function pieceAt(square) {
+      const fileIdx = files.indexOf(square[0]);
+      const rankIdx = 8 - parseInt(square[1],10);
+      if (rankIdx < 0 || rankIdx > 7 || fileIdx < 0 || fileIdx > 7) return ' ';
+      return (letterBoard[rankIdx] && letterBoard[rankIdx][fileIdx]) || ' ';
+    }
 
     // ---------- Renderers ----------
-    function renderBoard(f) {
-      boardEl.innerHTML = '';
-      const grid = fenToBoard(f);
-      for (let r = 0; r < 8; r++) {
-        for (let c = 0; c < 8; c++) {
-          const div = document.createElement('div');
-          div.className = 'sq ' + ((r + c) % 2 === 0 ? 'light' : 'dark');
-          div.dataset.square = idxToSquare(r, c);
-          div.textContent = grid[r][c];
-          boardEl.appendChild(div);
+    function renderBoard(f){
+      buildLetterBoard(f);
+      boardEl.innerHTML='';
+      // render grid and per-piece colors
+      const rows = f.split(' ')[0].split('/');
+      for (let r=0; r<8; r++){
+        const row = rows[r];
+        let c = 0;
+        for (const ch of row){
+          if (/[1-8]/.test(ch)) {
+            const n = parseInt(ch, 10);
+            for (let k=0;k<n;k++){
+              const d=document.createElement('div');
+              d.className='sq '+(((r)+c)%2===0?'light':'dark');
+              d.dataset.square=idxToSquare(r,c);
+              d.textContent=' ';
+              boardEl.appendChild(d);
+              c++;
+            }
+          } else {
+            const d=document.createElement('div');
+            d.className='sq '+(((r)+c)%2===0?'light':'dark');
+            d.dataset.square=idxToSquare(r,c);
+            d.textContent = pieceMap[ch] || ' ';
+            if (ch === ch.toUpperCase()) d.classList.add('pw'); else d.classList.add('pb');
+            boardEl.appendChild(d);
+            c++;
+          }
         }
       }
     }
-    function renderClocks(clocks) {
-      if (!clocks) return;
-      document.getElementById('twv').textContent = fmt(clocks.w_ms);
-      document.getElementById('tbv').textContent = fmt(clocks.b_ms);
-    }
-    function applyFlags(flags) {
+    function applyFlags(flags){
       gameOver = !!(flags && flags.game_over);
-      document.querySelectorAll('#board .sq').forEach(el => el.classList.remove('check'));
-      if (flags && flags.check && flags.check_square) {
-        const el = document.querySelector(`#board [data-square="${flags.check_square}"]`);
-        if (el) el.classList.add('check');
+      boardEl.querySelectorAll('.sq').forEach(el=>el.classList.remove('check'));
+      if(flags && flags.check && flags.check_square){
+        const el=boardEl.querySelector(`[data-square="${flags.check_square}"]`); if(el) el.classList.add('check');
       }
-      if (flags) {
-        if (flags.mate) statusEl.textContent = 'Status: Checkmate';
-        else if (flags.game_over) statusEl.textContent = `Status: Game Over${flags.result ? ' (' + flags.result + ')' : ''}`;
-        else if (flags.check) statusEl.textContent = 'Status: Check';
+      if(flags){
+        if(flags.mate) {
+          statusEl.textContent='Checkmate';
+          pauseClockFrontend();
+        } else if(flags.game_over) {
+          statusEl.textContent=`Game Over${flags.result?' ('+flags.result+')':''}`;
+          pauseClockFrontend();
+        } else if(flags.check) {
+          statusEl.textContent='Check';
+        }
       }
+    }
+    async function refreshMoveList(){
+      try{
+        const r=await fetch('/movelist'); const d=await r.json();
+        if(!d.success) return;
+        moveListEl.innerHTML='';
+        const arr=d.moves||[];
+        for(let i=0;i<arr.length;i+=2){
+          const li=document.createElement('li');
+          li.textContent = arr[i+1] ? `${arr[i]}  ${arr[i+1]}` : arr[i];
+          moveListEl.appendChild(li);
+        }
+        moveListEl.lastElementChild?.classList.add('current');
+      }catch{}
     }
 
     // ---------- Polling ----------
-    async function pollState() {
-      try {
-        const r = await fetch('/state');
-        const d = await r.json();
-        if (d.flags) applyFlags(d.flags);
-        if (d.clocks) {
+    async function pollState(){
+      try{
+        const r=await fetch('/state'); const d=await r.json();
+        if(d.flags) applyFlags(d.flags);
+        if(d.clocks){
           renderClocks(d.clocks);
-          if (d.clocks.flagged) {
-            gameOver = true;
-            const res = d.flags && d.flags.result ? ` (${d.flags.result})` : '';
-            statusEl.textContent = 'Status: Game Over (time)' + res;
+          if(d.clocks.flagged){
+            gameOver=true; const res=d.flags&&d.flags.result?` (${d.flags.result})`:'';
+            statusEl.textContent='Game Over (time)'+res;
+            pauseClockFrontend();
           }
         }
-      } catch {}
+      }catch{}
     }
-    function startPolling() { if (!pollId) pollId = setInterval(pollState, 500); }
-    function stopPolling()  { if (pollId) { clearInterval(pollId); pollId = null; } }
+    function startPolling(){ if(!pollId) pollId=setInterval(pollState,500); }
+    function stopPolling(){ if(pollId){ clearInterval(pollId); pollId=null; } }
 
-    // ---------- Move selection ----------
-    function clearHighlights() {
-      boardEl.querySelectorAll('.sq').forEach(el => el.classList.remove('sel','target'));
+    // ---------- Promotion picker ----------
+    function pickPromotion() {
+      return new Promise((resolve) => {
+        function cleanup(result) {
+          overlay.style.display = 'none';
+          overlay.removeEventListener('click', onOverlay);
+          overlay.querySelectorAll('.promote-btn').forEach(b => b.removeEventListener('click', onPick));
+          resolve(result);
+        }
+        function onPick(e) {
+          const p = e.currentTarget.dataset.piece;
+          cleanup(p || null);
+        }
+        function onOverlay(e) { if (e.target === overlay) cleanup(null); }
+        overlay.querySelectorAll('.promote-btn').forEach(b => b.addEventListener('click', onPick));
+        overlay.addEventListener('click', onOverlay);
+        overlay.style.display = 'flex';
+      });
+    }
+
+    // ---------- Click-to-move ----------
+    function clearHighlights(){
+      boardEl.querySelectorAll('.sq').forEach(el=>el.classList.remove('sel','target'));
       legalTargets.clear();
     }
-    async function showLegalTargets(fromSquare, sourceEl) {
-      if (gameOver) return;
-      try {
-        const res = await fetch(`/legal/${fromSquare}`);
-        const data = await res.json();
-        clearHighlights();
-        sourceEl.classList.add('sel');
-        data.legal.forEach(t => {
-          legalTargets.add(t);
-          const el = boardEl.querySelector(`[data-square="${t}"]`);
-          if (el) el.classList.add('target');
-        });
-      } catch (e) { console.error(e); }
+    async function showLegalTargets(fromSquare, sourceEl){
+      try{
+        const r=await fetch(`/legal/${fromSquare}`); const d=await r.json();
+        clearHighlights(); sourceEl.classList.add('sel');
+        for(const t of d.legal){ legalTargets.add(t); const el=boardEl.querySelector(`[data-square="${t}"]`); if(el) el.classList.add('target'); }
+      }catch{}
     }
-    async function submitMove(uci) {
-      try {
-        const res = await fetch('/move', {
-          method:'POST', headers:{ 'Content-Type':'application/json' },
-          body: JSON.stringify({ move: uci })
+    async function submitMove(uci, promotion=null){
+      try{
+        const r=await fetch('/move',{
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body: JSON.stringify(promotion ? { move: uci, promotion } : { move: uci })
         });
-        const data = await res.json();
-
-        if (!data.success) {
-          if (data.flags) applyFlags(data.flags);
-          if (data.clocks) renderClocks(data.clocks);
-          alert(data.error || 'Illegal move');
-          return;
+        const d=await r.json();
+        if(!d.success){
+          if(d.flags) applyFlags(d.flags);
+          if(d.clocks) renderClocks(d.clocks);
+          alert(d.error||'Illegal move'); return false;
         }
-
-        fen = data.fen;
-        renderBoard(fen);
-        statusEl.textContent = 'Status: ' + data.status;
-        if (data.flags) {
-          applyFlags(data.flags);
-          if (data.flags.game_over) {
-            const r = data.flags.result ? ` (${data.flags.result})` : '';
-            setTimeout(() => alert('Game over' + r), 0);
-          }
-        }
-        if (data.clocks) renderClocks(data.clocks);
-      } catch { alert('Network error submitting move'); }
+        fen=d.fen; renderBoard(fen); statusEl.textContent='Status: '+d.status;
+        if(d.flags) applyFlags(d.flags);
+        if(d.clocks) renderClocks(d.clocks);
+        await refreshMoveList();
+        return true;
+      }catch{ alert('Network error'); return false; }
     }
 
-    // ---------- Events ----------
-    boardEl.addEventListener('click', async (e) => {
-      if (gameOver) return;
-      const el = e.target.closest('.sq'); if (!el) return;
-      const sq = el.dataset.square;
-      if (!selected) { selected = sq; await showLegalTargets(sq, el); return; }
-      if (legalTargets.has(sq)) { await submitMove(selected + sq); }
-      selected = null; clearHighlights();
+    boardEl.addEventListener('click', async (e)=>{
+      if(gameOver) return;
+      const el=e.target.closest('.sq'); if(!el) return;
+      const sq=el.dataset.square;
+      if(!selected){ selected=sq; await showLegalTargets(sq,el); return; }
+      if(legalTargets.has(sq)){
+        // promotion check
+        const p = pieceAt(selected);
+        const isWhitePawn = (p === 'P');
+        const isBlackPawn = (p === 'p');
+        const destRank = parseInt(sq[1], 10);
+        let promo = null;
+        if ((isWhitePawn && destRank === 8) || (isBlackPawn && destRank === 1)) {
+          promo = await pickPromotion();
+          if (!promo) { selected=null; clearHighlights(); return; }
+        }
+        await submitMove(selected + sq, promo);
+      }
+      selected=null; clearHighlights();
     });
 
-    document.getElementById('resetBtn').addEventListener('click', async () => {
-      try {
-        const res = await fetch('/reset', { method: 'POST' });
-        const data = await res.json();
-        if (data.success === false) { alert(data.error || 'Reset failed'); return; }
-        fen = data.fen; renderBoard(fen);
-        statusEl.textContent = 'Status: ' + data.status;
-        selected = null; clearHighlights(); gameOver = false;
-        if (data.flags) applyFlags(data.flags);
-        if (data.clocks) renderClocks(data.clocks);
-        analysisEl.innerHTML = '<strong>Analysis</strong><div class="muted">Board reset.</div>';
-      } catch (e) { alert('Network error on reset'); console.error(e); }
+    // ---------- Clock helpers ----------
+    async function pauseClockFrontend() {
+      try { await fetch('/clock/pause', { method:'POST' }); } catch {}
+    }
+
+    // ---------- Controls ----------
+    document.getElementById('resetBtn').addEventListener('click', async ()=>{
+      try{
+        const r=await fetch('/reset',{method:'POST'}); const d=await r.json();
+        fen=d.fen; renderBoard(fen); gameOver=false; selected=null; clearHighlights();
+        statusEl.textContent='Status: '+d.status;
+        if(d.flags) applyFlags(d.flags); if(d.clocks) renderClocks(d.clocks);
+        moveListEl.innerHTML=''; setEval(0);
+        reviewOut.innerHTML='';
+      }catch{}
+    });
+    document.getElementById('applyTcBtn').addEventListener('click', async ()=>{
+      const [minutes,inc]=document.getElementById('tcPreset').value.split(',').map(Number);
+      const r=await fetch('/clock/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({minutes,increment:inc,turn:'w'})});
+      const d=await r.json(); if(d.clocks) renderClocks(d.clocks);
+    });
+    document.getElementById('startClkBtn').addEventListener('click', async ()=>{
+      const r=await fetch('/clock/start',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
+      const d=await r.json(); if(d.clocks) renderClocks(d.clocks);
+    });
+    document.getElementById('pauseClkBtn').addEventListener('click', async ()=>{
+      const r=await fetch('/clock/pause',{method:'POST'}); const d=await r.json(); if(d.clocks) renderClocks(d.clocks);
     });
 
-    // Time controls
-    document.getElementById('applyTcBtn').addEventListener('click', async () => {
-      const val = document.getElementById('tcPreset').value;
-      const [minutes, inc] = val.split(',').map(x => parseInt(x, 10));
-      const res = await fetch('/clock/config', {
-        method: 'POST', headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({ minutes, increment: inc, turn: 'w' })
-      });
-      const data = await res.json();
-      if (data.clocks) renderClocks(data.clocks);
-    });
-    document.getElementById('startClkBtn').addEventListener('click', async () => {
-      const res = await fetch('/clock/start', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({}) });
-      const data = await res.json();
-      if (data.clocks) renderClocks(data.clocks);
-    });
-    document.getElementById('pauseClkBtn').addEventListener('click', async () => {
-      const res = await fetch('/clock/pause', { method:'POST' });
-      const data = await res.json();
-      if (data.clocks) renderClocks(data.clocks);
-    });
-
-    // AI
-    document.getElementById('suggestBtn').addEventListener('click', async () => {
-      try {
-        const res = await fetch('/ai/suggest', { method:'POST', headers:{ 'Content-Type':'application/json' }, body: '{}' });
-        const data = await res.json();
-        if (!data.success) { analysisEl.innerHTML = `<strong>Analysis</strong><div>Engine unavailable: ${data.error || 'unknown error'}</div>`; return; }
-        const s = data.suggestion;
-        let evalText = '';
-        if (s.eval) evalText = s.eval.type === 'mate' ? `Mate in ${s.eval.value}` : `Eval: ${(s.eval.value/100).toFixed(2)} pawns`;
-        analysisEl.innerHTML = `
+    // ---------- Engine UI ----------
+    async function quickAnalyze(){
+      try{
+        const r=await fetch('/ai/suggest',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({movetime_ms:200})});
+        const d=await r.json();
+        if(!d.success){ setEval(null); analysisEl.innerHTML='<strong>Analysis</strong><div class="label">Engine unavailable.</div>'; return; }
+        const s=d.suggestion;
+        if(s.eval){
+          if(s.eval.type==='mate') setEval({type:'mate',value:s.eval.value});
+          else setEval(s.eval.value);
+        } else setEval(null);
+        analysisEl.innerHTML=`
           <strong>Analysis</strong>
           <div><b>Best move:</b> ${s.bestmove || '(none)'}</div>
-          <div><b>Line (SAN):</b> ${(s.pv_san || []).join(' ')}</div>
-          <div><b>${evalText}</b></div>
-          <div class="muted">Engine: ${s.engine?.version || ''}</div>`;
-      } catch { analysisEl.innerHTML = `<strong>Analysis</strong><div>Network error.</div>`; }
+          <div><b>Line (SAN):</b> ${(s.pv_san||[]).join(' ')}</div>
+          <div class="label">Engine: ${s.engine?.version || ''}</div>`;
+      }catch{ setEval(null); }
+    }
+    document.getElementById('suggestBtn').addEventListener('click', quickAnalyze);
+    document.getElementById('aiMoveBtn').addEventListener('click', async ()=>{
+      try{
+        const r=await fetch('/ai/play',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
+        const d=await r.json();
+        if(!d.success){ analysisEl.innerHTML='<strong>Analysis</strong><div class="label">Engine unavailable.</div>'; return; }
+        fen=d.fen; renderBoard(fen);
+        const s=await fetch('/state'); const ss=await s.json();
+        if(ss.flags) applyFlags(ss.flags); if(ss.clocks) renderClocks(ss.clocks);
+        await refreshMoveList(); await quickAnalyze();
+      }catch{}
     });
-    document.getElementById('aiMoveBtn').addEventListener('click', async () => {
-      try {
-        const res = await fetch('/ai/play', { method:'POST', headers:{ 'Content-Type':'application/json' }, body: '{}' });
-        const data = await res.json();
-        if (!data.success) { analysisEl.innerHTML = `<strong>Analysis</strong><div>Engine unavailable: ${data.error || 'unknown error'}</div>`; return; }
-        fen = data.fen; renderBoard(fen);
-        const a = data.ai?.analysis, played = data.ai?.move || '';
-        let evalText = '';
-        if (a?.eval) evalText = (a.eval.type === 'mate') ? `Mate in ${a.eval.value}` : `Eval: ${(a.eval.value/100).toFixed(2)} pawns`;
-        analysisEl.innerHTML = `
-          <strong>Analysis</strong>
-          <div><b>Engine played:</b> ${played}</div>
-          <div><b>Line (SAN):</b> ${(a?.pv_san || []).join(' ')}</div>
-          <div><b>${evalText}</b></div>
-          <div class="muted">Engine: ${a?.engine?.version || ''}</div>`;
-        statusEl.textContent = 'Status: Ongoing';
-        // refresh flags & clocks
-        try { const s = await fetch('/state'); const ss = await s.json(); if (ss.flags) applyFlags(ss.flags); if (ss.clocks) renderClocks(ss.clocks); } catch {}
-      } catch { analysisEl.innerHTML = `<strong>Analysis</strong><div>Network error.</div>`; }
+    document.getElementById('refreshEvalBtn').addEventListener('click', quickAnalyze);
+
+    // ---------- Import / Export ----------
+    document.getElementById('loadFenBtn').addEventListener('click', async ()=>{
+      const fenTxt=document.getElementById('fenInput').value.trim();
+      if(!fenTxt){ alert('Paste a FEN first.'); return; }
+      const r=await fetch('/set_fen',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({fen:fenTxt})});
+      const d=await r.json();
+      if(!d.success){ alert(d.error||'Invalid FEN'); return; }
+      fen=d.fen; renderBoard(fen); statusEl.textContent='Status: '+d.status; selected=null; clearHighlights();
+      try{ const s=await fetch('/state'); const ss=await s.json(); if(ss.flags) applyFlags(ss.flags); if(ss.clocks) renderClocks(ss.clocks);}catch{}
+      await refreshMoveList(); await quickAnalyze();
+    });
+    document.getElementById('copyFenBtn').addEventListener('click', async ()=>{ try{ await navigator.clipboard.writeText(fen); alert('Current FEN copied.'); }catch{ alert('Copy failed.'); }});
+    document.getElementById('loadPgnBtn').addEventListener('click', async ()=>{
+      const pgnTxt=document.getElementById('pgnInput').value.trim();
+      if(!pgnTxt){ alert('Paste a PGN first.'); return; }
+      const r=await fetch('/import_pgn',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pgn:pgnTxt})});
+      const d=await r.json();
+      if(!d.success){ alert(d.error||'Invalid PGN'); return; }
+      fen=d.fen; renderBoard(fen); statusEl.textContent='Status: '+d.status; selected=null; clearHighlights();
+      await refreshMoveList();
+      try{ const s=await fetch('/state'); const ss=await s.json(); if(ss.flags) applyFlags(ss.flags); if(ss.clocks) renderClocks(ss.clocks);}catch{}
+      await quickAnalyze();
+    });
+
+    // ---------- Reviewer ----------
+    function scrollReviewIntoView(){
+      const card = document.getElementById('review');
+      card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+    document.getElementById('reviewPgnBtn').addEventListener('click', async ()=>{
+      const pgnTxt=document.getElementById('pgnInput').value.trim();
+      if(!pgnTxt){ alert('Paste a PGN first.'); return; }
+      reviewOut.innerHTML = '<div class="label">Running review…</div>';
+      const r=await fetch('/review',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pgn:pgnTxt,movetime_ms:200})});
+      const d=await r.json();
+      if(!d.success){ reviewOut.innerHTML=`<div style="color:#e11d48">${d.error||'Review failed'}</div>`; return; }
+      reviewOut.innerHTML = d.html || '<div class="label">No report returned.</div>';
+      scrollReviewIntoView();
+    });
+    document.getElementById('reviewCurrentBtn').addEventListener('click', async ()=>{
+      reviewOut.innerHTML = '<div class="label">Running review…</div>';
+      const r=await fetch('/review',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({movetime_ms:200})});
+      const d=await r.json();
+      if(!d.success){ reviewOut.innerHTML=`<div style="color:#e11d48">${d.error||'Review failed'}</div>`; return; }
+      reviewOut.innerHTML = d.html || '<div class="label">No report returned.</div>';
+      scrollReviewIntoView();
     });
 
     // ---------- Init ----------
-    renderBoard(fen);
-    (async () => {
-      try { const r = await fetch('/state'); const d = await r.json(); if (d.flags) applyFlags(d.flags); if (d.clocks) renderClocks(d.clocks); } catch {}
+    (async function bootstrap(){
+      renderBoard(fen);
+      startPolling();
+      try{
+        const s=await fetch('/state'); const d=await s.json();
+        if(d.flags) applyFlags(d.flags);
+        if(d.clocks) renderClocks(d.clocks);
+      }catch{}
+      await refreshMoveList();
+      await quickAnalyze();
     })();
-    startPolling();
   </script>
-</body>=
+</body>
 </html>
-=
