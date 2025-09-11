@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Leo’s Chess — SPA</title>
+  <link rel="preload" as="video" href="/static/media/leos_chess_intro.mp4" type="video/mp4" />
+  <style>
+    :root {
+      --bg: #eef2f7; --panel: rgba(255,255,255,.85);
+      --light:#eedcc6; --dark:#7a5230; --accent:#c98e5b;
+      --radius:14px; --shadow:0 8px 30px rgba(0,0,0,.12);
+      --text:#0f172a; --muted:#64748b;
+    }
+    *{box-sizing:border-box} html,body{height:100%;margin:0}
+    body{color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",Arial,sans-serif;background:var(--bg)}
+    body::before{content:"";position:fixed;inset:0;background:
+      radial-gradient(1200px 800px at 10% -20%, rgba(255,255,255,.18), transparent 60%),
+      radial-gradient(1000px 600px at 120% 120%, rgba(0,0,0,.12), transparent 60%),
+      var(--bg-image, linear-gradient(135deg,#f8fafc,#e2e8f0));
+      background-size:cover;background-position:center;z-index:-2;filter:saturate(1.05)}
+    .splash{position:fixed;inset:0;z-index:9999;display:grid;place-items:center;background:#000;transition:opacity .35s,visibility .35s}
+    .splash.hide{opacity:0;visibility:hidden}
+    .splash video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+    .splash .logo{position:relative;z-index:1;color:#fff;letter-spacing:.28rem;font-weight:900;font-size:clamp(28px,6vw,48px);
+      text-shadow:0 6px 28px rgba(0,0,0,.6);transform:scale(.97);transition:transform .4s ease}
+    .splash.ready .logo{transform:scale(1)}
+    @media (prefers-reduced-motion: reduce){ .splash video{display:none!important} }
+    .app{display:grid;grid-template-rows:auto 1fr auto;min-height:100%}
+    header,footer{display:flex;align-items:center;justify-content:space-between;padding:12px 20px}
+    .brand{font-weight:800;letter-spacing:.3px} .ver{color:var(--muted);font-size:12px}
+    .hero{display:grid;place-items:center;padding:18px}
+    .menu{width:min(1100px,92vw);background:var(--panel);border:1px solid rgba(0,0,0,.08);backdrop-filter:blur(8px);
+      border-radius:var(--radius);box-shadow:var(--shadow);padding:18px}
+    .menu-top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+    .menu-title{font-size:clamp(22px,3.4vw,32px);font-weight:800}
+    .menu-grid{margin-top:14px;display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+    .card{background:#fff;border:1px solid #e2e8f0;border-radius:var(--radius);padding:14px;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+    .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    select,button{border-radius:10px;border:1px solid #cbd5e1;background:#fff;color:var(--text);padding:8px 12px}
+    button.primary{background:var(--accent);border-color:color-mix(in srgb, var(--accent), #000 12%);color:#fff;font-weight:700}
+    button.primary:hover{filter:brightness(.98)} .badge{display:inline-block;font-size:12px;padding:2px 8px;border-radius:999px;border:1px solid #cbd5e1;background:#eef2ff;color:#4338ca}
+    .soon{opacity:.6;pointer-events:none}
+    .modal{position:fixed;inset:0;display:none;place-items:center;z-index:10000;background:rgba(0,0,0,.35)} .modal.open{display:grid}
+    .modal-card{background:var(--panel);border:1px solid rgba(0,0,0,.12);border-radius:var(--radius);box-shadow:var(--shadow);width:min(560px,92vw);padding:16px}
+    .swatches{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px}
+    .swatch{border-radius:12px;padding:10px;border:1px solid #cbd5e1;cursor:pointer;display:grid;gap:6px;place-items:center;background:#fff}
+    .thumb{width:100%;height:80px;border-radius:10px;background-size:cover;background-position:center}
+    .modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:12px}
+    .screen{display:none} .screen.active{display:block}
+    .game{width:min(1100px,92vw);margin:0 auto;padding:16px;display:grid;grid-template-columns:1fr 320px;gap:16px}
+    #boardMount{min-height:560px;border-radius:14px;border:2px dashed #cbd5e1;background:rgba(255,255,255,.6);display:grid;place-items:center;color:#64748b}
+    .panel{background:var(--panel);border:1px solid rgba(0,0,0,.08);border-radius:14px;box-shadow:var(--shadow);padding:12px;display:grid;gap:10px;align-content:start}
+    .log{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:10px;min-height:160px;overflow:auto;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px}
+    @media (max-width:920px){ .game{grid-template-columns:1fr} #boardMount{min-height:420px} }
+  </style>
+</head>
+<body>
+
+  <!-- Splash / Loading -->
+  <div id="splash" class="splash" role="dialog" aria-label="Loading Leo’s Chess" aria-modal="true">
+    <video id="splashVid" muted playsinline preload="auto">
+      <source src="/static/media/leos_chess_intro.mp4" type="video/mp4" />
+    </video>
+    <div class="logo">LEO’S CHESS</div>
+  </div>
+
+  <div class="app" id="appRoot" aria-live="polite">
+    <header>
+      <div class="brand">Leo’s Chess</div>
+      <div class="row">
+        <button id="openThemeBtn" aria-haspopup="dialog" aria-controls="themeModal">Choose Theme</button>
+      </div>
+    </header>
+
+    <!-- Main Menu -->
+    <main id="screenMenu" class="screen active hero" role="main" aria-labelledby="menuTitle">
+      <section class="menu" aria-label="Main menu">
+        <div class="menu-top">
+          <h1 id="menuTitle" class="menu-title">Play & Learn</h1>
+          <span class="badge">v0.1 • © Leo Knoetze</span>
+        </div>
+
+        <div class="menu-grid" role="list">
+          <!-- Play vs AI -->
+          <article class="card" role="listitem">
+            <h3>Play vs AI</h3>
+            <div class="row" style="gap:10px;">
+              <label for="difficulty" class="visually-hidden">Difficulty</label>
+              <select id="difficulty" aria-label="Difficulty">
+                <option value="1">Beginner (1)</option>
+                <option value="3">Casual (3)</option>
+                <option value="5">Strong (5)</option>
+                <option value="8">Master (8)</option>
+              </select>
+              <button id="startGameBtn" class="primary">Start Game</button>
+            </div>
+            <p style="margin:8px 0 0; color:#64748b; font-size: 13px;">Engine skill wired in next milestones.</p>
+          </article>
+
+          <!-- Puzzles (disabled) -->
+          <article class="card soon" role="listitem" aria-disabled="true">
+            <h3>Do Puzzles <span class="badge">Coming soon</span></h3>
+            <button aria-disabled="true" tabindex="-1">Open Trainer</button>
+          </article>
+
+          <!-- Multiplayer -->
+          <article class="card" role="listitem">
+            <h3>Multiplayer</h3>
+            <p style="margin:.4rem 0; color:#64748b; font-size: 13px;">Play with a friend on your LAN.</p>
+            <a href="/multi"><button>Open Lobby</button></a>
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <!-- Game Screen placeholder (board mounts later) -->
+    <main id="screenGame" class="screen" role="main" aria-labelledby="gameTitle">
+      <section class="game">
+        <div id="boardMount" aria-label="Chessboard mount area">Board will appear here…</div>
+        <aside class="panel" aria-label="Controls">
+          <h2 id="gameTitle" style="margin:0 0 6px;">Game</h2>
+          <div class="row">
+            <button id="backToMenuBtn">Back to Menu</button>
+            <button id="resignBtn">Resign</button>
+          </div>
+          <div><b>AI Level:</b> <span id="aiLevelLabel">—</span></div>
+          <div>
+            <b>Move Log</b>
+            <div id="moveLog" class="log" aria-live="polite" aria-atomic="false"></div>
+          </div>
+        </aside>
+      </section>
+    </main>
+
+    <footer>
+      <span></span><span class="ver">v0.1 • © Leo Knoetze</span>
+    </footer>
+  </div>
+
+  <!-- Theme Modal -->
+  <div id="themeModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="themeTitle" aria-describedby="themeDesc">
+    <div class="modal-card" role="document">
+      <h2 id="themeTitle" style="margin:0 0 6px;">Choose Theme</h2>
+      <p id="themeDesc" style="margin:0 0 10px; color:#64748b">Pick a style. Saved automatically.</p>
+
+      <div class="swatches">
+        <button class="swatch" data-theme="wood">
+          <div class="thumb" style="background-image:url('/static/media/theme_wood.jpg');"></div><div><b>Wood</b></div>
+        </button>
+        <button class="swatch" data-theme="stone">
+          <div class="thumb" style="background-image:url('/static/media/theme_stone.jpg');"></div><div><b>Stone</b></div>
+        </button>
+        <button class="swatch" data-theme="lava">
+          <div class="thumb" style="background-image:url('/static/media/theme_lava.jpg');"></div><div><b>Lava</b></div>
+        </button>
+      </div>
+
+      <div class="modal-actions"><button id="closeThemeBtn">Close</button></div>
+    </div>
+  </div>
+
+  <script>
+    // Splash video
+    (function(){
+      const splash = document.getElementById('splash');
+      const vid = document.getElementById('splashVid');
+      const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (!splash) return;
+      if (!vid || reduced) { setTimeout(()=> splash.classList.add('hide'), 1000); return; }
+      let closed=false;
+      const close=()=>{ if(closed) return; closed=true; splash.classList.add('ready'); setTimeout(()=>splash.classList.add('hide'),320); };
+      const start=()=>{ const safety=setTimeout(close,2000); vid.play().then(()=>{ setTimeout(()=>{clearTimeout(safety);close();},2000); }).catch(()=>{clearTimeout(safety);close();}); };
+      vid.addEventListener('canplaythrough', start, { once:true });
+      vid.addEventListener('loadedmetadata', ()=> setTimeout(start,150), { once:true });
+      setTimeout(start,800);
+    })();
+
+    // Theme system
+    const THEMES = {
+      wood:  { bg:"url('/static/media/theme_wood.jpg')",  light:"#eedcc6", dark:"#7a5230", accent:"#c98e5b", panel:"rgba(255,255,255,.86)" },
+      stone: { bg:"url('/static/media/theme_stone.jpg')", light:"#d8d8d8", dark:"#3f3f46", accent:"#7c7c7c", panel:"rgba(255,255,255,.86)" },
+      lava:  { bg:"url('/static/media/theme_lava.jpg')",  light:"#f1e9df", dark:"#1b1a1a", accent:"#e4572e", panel:"rgba(255,255,255,.86)" }
+    };
+    function applyTheme(name){
+      const t = THEMES[name] || THEMES.wood;
+      const r = document.documentElement;
+      r.style.setProperty('--bg-image', t.bg);
+      r.style.setProperty('--light', t.light);
+      r.style.setProperty('--dark',  t.dark);
+      r.style.setProperty('--accent',t.accent);
+      r.style.setProperty('--panel', t.panel);
+      localStorage.setItem('leos_theme', name);
+    }
+    const themeModal = document.getElementById('themeModal');
+    const openThemeBtn = document.getElementById('openThemeBtn');
+    const closeThemeBtn = document.getElementById('closeThemeBtn');
+    function openModal(){ themeModal.classList.add('open'); themeModal.querySelector('.swatch')?.focus(); }
+    function closeModal(){ themeModal.classList.remove('open'); openThemeBtn.focus(); }
+    openThemeBtn.addEventListener('click', openModal);
+    closeThemeBtn.addEventListener('click', closeModal);
+    themeModal.addEventListener('click', (e)=>{ if(e.target===themeModal) closeModal(); });
+    themeModal.querySelectorAll('.swatch').forEach(btn=> btn.addEventListener('click', ()=>{ applyTheme(btn.dataset.theme); setTimeout(closeModal,120); }));
+    applyTheme(localStorage.getItem('leos_theme') || 'wood');
+
+    // Screen nav
+    const screenMenu = document.getElementById('screenMenu');
+    const screenGame = document.getElementById('screenGame');
+    const startGameBtn = document.getElementById('startGameBtn');
+    const backToMenuBtn = document.getElementById('backToMenuBtn');
+    const difficultySel = document.getElementById('difficulty');
+    const aiLevelLabel = document.getElementById('aiLevelLabel');
+
+    function showScreen(name){
+      screenMenu.classList.toggle('active', name==='menu');
+      screenGame.classList.toggle('active', name==='game');
+    }
+    startGameBtn.addEventListener('click', ()=>{
+      const diff = Number(difficultySel.value) || 1;
+      localStorage.setItem('leos_difficulty', String(diff));
+      aiLevelLabel.textContent = diff;
+      // For now open classic board (keeps your working app)
+      window.location.href = "/board";
+    });
+    backToMenuBtn.addEventListener('click', ()=> showScreen('menu'));
+  </script>
+</body>
+</html>

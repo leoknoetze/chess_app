@@ -2,142 +2,74 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Web Chess — Pro UI</title>
+  <title>Leo’s Chess — Board</title>
   <style>
-    :root {
-      --sq: 72px;
-      --light: #f0d9b5;
-      --dark:  #b58863;
-      --panel: #f8fafc;
-      --text: #1f2937;
-      --muted: #64748b;
-      --sel: rgba(80,160,255,.65);
-      --tgt: rgba(255,215,0,.65);
-      --black-piece: #111;
-      --white-piece: #fff;
-    }
-    * { box-sizing: border-box; }
-    html, body { height: 100%; margin: 0; background: #f2f4f7; color: var(--text); font-family: system-ui, -apple-system, "Segoe UI", Arial, sans-serif; }
-    a { color: inherit; text-decoration: none; }
-    button { cursor: pointer; border: 1px solid #cbd5e1; background: white; padding: 6px 12px; border-radius: 8px; }
-    button:hover { background: #f1f5f9; }
-    textarea { width: 100%; font-family: Consolas, monospace; }
-
-    /* Header */
-    .header { display:flex; justify-content:space-between; align-items:center; padding:16px; max-width:1200px; margin:0 auto; }
-    .left { display:flex; align-items:center; gap:8px; }
-    .title { font-weight:700; letter-spacing:.3px; }
-    .badge { padding:2px 8px; background:#eef2ff; border:1px solid #c7d2fe; color:#4338ca; border-radius:999px; font-size:12px; }
-
-    /* Main area: board + sidebar (no grey gap) */
-    #wrap { display:flex; gap:20px; justify-content:center; align-items:flex-start; padding:0 16px 24px; max-width:1200px; margin:0 auto; }
-    #board {
-      display:grid;
-      grid-template-columns:repeat(8,var(--sq));
-      grid-template-rows:repeat(8,var(--sq));
-      border:2px solid #334155;
-      border-radius:10px;
-      overflow:hidden;
-      background:#0002;
-      user-select:none;
-      flex-shrink:0;
-    }
-    .sq { width:var(--sq); height:var(--sq); display:grid; place-items:center; font-size:44px; }
-    .light { background:var(--light); }
-    .dark  { background:var(--dark); }
-    .sel   { outline:4px solid var(--sel); outline-offset:-4px; }
-    .target{ outline:4px solid var(--tgt); outline-offset:-4px; }
-    .check { outline:4px solid #e11d48; outline-offset:-4px; }
-
-    /* Piece color fix per piece (uppercase=white, lowercase=black) */
-    .pw { color: var(--white-piece); text-shadow: 0 0 1px #0008; }
-    .pb { color: var(--black-piece); }
-
-    /* Sidebar */
-    .sidebar { width:360px; display:grid; gap:12px; }
-    .card { background:var(--panel); border:1px solid #e2e8f0; border-radius:12px; padding:12px; }
-    .row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
-    .label { font-size:12px; color:var(--muted); }
-    .timers { display:flex; gap:10px; }
-    .timer { flex:1; padding:8px 10px; border:1px solid #cbd5e1; border-radius:10px; background:white; display:flex; align-items:center; justify-content:space-between; font-weight:700; }
-    select { padding:6px 10px; border-radius:8px; border:1px solid #cbd5e1; background:white; }
-
-    /* Eval bar */
-    .eval { background:white; border:1px solid #cbd5e1; border-radius:10px; padding:10px; }
-    .bar { position:relative; height:16px; border-radius:999px; background:linear-gradient(to right,#111 50%,#fff 50%); overflow:hidden; }
-    .fill{ position:absolute; inset:0 auto 0 0; width:50%; background:linear-gradient(to right,#111,#4b5563,#94a3b8,#e2e8f0,#fff); transition:width .25s ease; }
-    .eval-note{ font-size:12px; color:var(--muted); margin-top:6px; }
-    .eval-num{ font-variant-numeric:tabular-nums; font-weight:700; }
-
-    /* Move list */
-    .moves { background:white; border:1px solid #cbd5e1; border-radius:10px; padding:10px; max-height:240px; overflow:auto; }
-    .moves ol { margin:0; padding-left:20px; }
-    .moves li { margin:2px 0; }
-    .current { background:#eef2ff; }
-
-    /* Promotion picker overlay */
-    .promote-overlay {
-      position: fixed; inset: 0; background: rgba(0,0,0,.35);
-      display: none; align-items: center; justify-content: center;
-      z-index: 9999;
-    }
-    .promote-box {
-      background: #fff; border: 1px solid #cbd5e1; border-radius: 12px;
-      padding: 10px; display: flex; gap: 8px;
-      box-shadow: 0 10px 30px rgba(0,0,0,.15);
-    }
-    .promote-btn {
-      width: 56px; height: 56px; display: grid; place-items: center;
-      font-size: 34px; border: 1px solid #cbd5e1; border-radius: 10px;
-      cursor: pointer; background: #f8fafc;
-    }
-    .promote-btn:hover { background:#eef2ff; }
+    :root { --sq:72px; --light:#f0d9b5; --dark:#b58863; --panel:#f8fafc; --text:#1f2937; --muted:#64748b; --sel:rgba(80,160,255,.65); --tgt:rgba(255,215,0,.65); }
+    *{box-sizing:border-box} html,body{height:100%;margin:0;background:#f2f4f7;color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",Arial,sans-serif}
+    .header{display:flex;justify-content:space-between;align-items:center;padding:12px 16px}
+    .brand{font-weight:800} .row{display:flex;gap:8px;align-items:center}
+    #wrap{display:flex;gap:20px;justify-content:center;align-items:flex-start;padding:0 16px 24px;max-width:1200px;margin:0 auto}
+    #board{display:grid;grid-template-columns:repeat(8,var(--sq));grid-template-rows:repeat(8,var(--sq));border:2px solid #334155;border-radius:10px;overflow:hidden;background:#0002;user-select:none;flex-shrink:0}
+    .sq{width:var(--sq);height:var(--sq);display:grid;place-items:center;font-size:44px}
+    .light{background:var(--light)} .dark{background:var(--dark)}
+    .sel{outline:4px solid var(--sel);outline-offset:-4px} .target{outline:4px solid var(--tgt);outline-offset:-4px} .check{outline:4px solid #e11d48;outline-offset:-4px}
+    .pw{color:#fff;text-shadow:0 0 1px #0008} .pb{color:#111}
+    .sidebar{width:360px;display:grid;gap:12px}
+    .card{background:var(--panel);border:1px solid #e2e8f0;border-radius:12px;padding:12px}
+    .timers{display:flex;gap:10px} .timer{flex:1;padding:8px 10px;border:1px solid #cbd5e1;border-radius:10px;background:#fff;display:flex;justify-content:space-between;font-weight:700}
+    .moves{background:#fff;border:1px solid #cbd5e1;border-radius:10px;padding:10px;max-height:240px;overflow:auto}
+    .moves ol{margin:0;padding-left:20px} .moves li{margin:2px 0} .current{background:#eef2ff}
+    .eval{background:#fff;border:1px solid #cbd5e1;border-radius:10px;padding:10px}
+    .bar{position:relative;height:16px;border-radius:999px;background:linear-gradient(to right,#111 50%,#fff 50%);overflow:hidden}
+    .fill{position:absolute;inset:0 auto 0 0;width:50%;background:linear-gradient(to right,#111,#4b5563,#94a3b8,#e2e8f0,#fff);transition:width .25s ease}
+    .promote-overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;align-items:center;justify-content:center;z-index:9999}
+    .promote-box{background:#fff;border:1px solid #cbd5e1;border-radius:12px;padding:10px;display:flex;gap:8px;box-shadow:0 10px 30px rgba(0,0,0,.15)}
+    .promote-btn{width:56px;height:56px;display:grid;place-items:center;font-size:34px;border:1px solid #cbd5e1;border-radius:10px;background:#f8fafc;cursor:pointer}
+    .promote-btn:hover{background:#eef2ff}
   </style>
 </head>
 <body>
   <div class="header">
-    <div class="left">
-      <span class="title">Web Chess</span>
-      <span class="badge">M7 UI</span>
-    </div>
+    <div class="brand">Leo’s Chess</div>
     <div class="row">
+      <a href="/"><button>◀ Menu</button></a>
       <a href="/multi"><button>Multiplayer ▶</button></a>
     </div>
   </div>
 
   <div id="wrap">
-    <!-- Board -->
     <div id="board" aria-label="Chessboard"></div>
 
-    <!-- Sidebar -->
     <div class="sidebar">
       <div class="card"><strong>Status:</strong> <span id="status">{{ status }}</span></div>
 
       <div class="card timers">
-        <div class="timer"><span class="label">White</span><span id="twv">05:00</span></div>
-        <div class="timer"><span class="label">Black</span><span id="tbv">05:00</span></div>
+        <div class="timer"><span>White</span><span id="twv">05:00</span></div>
+        <div class="timer"><span>Black</span><span id="tbv">05:00</span></div>
       </div>
 
-      <div class="card row">
-        <select id="tcPreset">
-          <option value="5,0">5+0</option>
-          <option value="10,0">10+0</option>
-          <option value="15,10">15+10</option>
-          <option value="3,2">3+2</option>
-        </select>
-        <button id="applyTcBtn">Apply</button>
-        <button id="startClkBtn">Start</button>
-        <button id="pauseClkBtn">Pause</button>
-        <button id="resetBtn">Reset</button>
+      <div class="card">
+        <div class="row" style="gap:8px;flex-wrap:wrap">
+          <select id="tcPreset">
+            <option value="5,0">5+0</option>
+            <option value="10,0">10+0</option>
+            <option value="15,10">15+10</option>
+            <option value="3,2">3+2</option>
+          </select>
+          <button id="applyTcBtn">Apply</button>
+          <button id="startClkBtn">Start</button>
+          <button id="pauseClkBtn">Pause</button>
+          <button id="resetBtn">Reset</button>
+        </div>
       </div>
 
       <div class="eval">
-        <div class="row" style="justify-content:space-between;">
-          <div><b>Evaluation</b> <span class="eval-num" id="evalNum">0.00</span></div>
-          <button id="refreshEvalBtn" title="Quick analyze current position">Analyze</button>
+        <div class="row" style="justify-content:space-between">
+          <div><b>Evaluation</b> <span id="evalNum">0.00</span></div>
+          <button id="refreshEvalBtn" title="Analyze">Analyze</button>
         </div>
-        <div class="bar"><div class="fill" id="evalFill" style="width:50%"></div></div>
-        <div class="eval-note">Left = Black advantage, Right = White advantage.</div>
+        <div class="bar"><div id="evalFill" class="fill"></div></div>
+        <div style="font-size:12px;color:#64748b;margin-top:6px">Left = Black advantage, Right = White advantage.</div>
       </div>
 
       <div class="moves">
@@ -145,54 +77,51 @@
         <ol id="moveList"></ol>
       </div>
 
-      <!-- Import / Export -->
+      <div class="card" id="analysis">
+        <strong>Analysis</strong>
+        <div style="color:#64748b">Use Suggest/AI Move or Analyze.</div>
+        <div class="row" style="margin-top:6px">
+          <button id="suggestBtn">Suggest Move</button>
+          <button id="aiMoveBtn">AI Move</button>
+        </div>
+      </div>
+
       <div class="card">
         <b>Import / Export</b>
-        <div class="label" style="margin-top:6px;">FEN</div>
-        <textarea id="fenInput" rows="2" placeholder="FEN string here"></textarea>
-        <div class="row" style="margin-top:6px;">
+        <div style="margin-top:6px;font-size:12px;color:#64748b">FEN</div>
+        <textarea id="fenInput" rows="2" placeholder="FEN here" style="width:100%;font-family:Consolas,monospace"></textarea>
+        <div class="row" style="margin-top:6px">
           <button id="loadFenBtn">Load FEN</button>
           <button id="copyFenBtn">Copy Current FEN</button>
         </div>
 
-        <div class="label" style="margin-top:10px;">PGN (e.g., paste from chess.com export)</div>
-        <textarea id="pgnInput" rows="6" placeholder='[Event "Live Chess"]&#10;1. e4 e5 2. Nf3 Nc6 ...'></textarea>
-        <div class="row" style="margin-top:6px;">
+        <div style="margin-top:10px;font-size:12px;color:#64748b">PGN (paste from chess.com export)</div>
+        <textarea id="pgnInput" rows="6" placeholder='[Event "Live Chess"]&#10;1. e4 e5 2. Nf3 Nc6 ...' style="width:100%;font-family:Consolas,monospace"></textarea>
+        <div class="row" style="margin-top:6px">
           <button id="loadPgnBtn">Load PGN</button>
           <a id="downloadPgnLink" href="/export_pgn"><button type="button">Download Current PGN</button></a>
         </div>
       </div>
 
-      <!-- Reviewer -->
       <div class="card" id="review">
         <b>Game Review</b>
-        <div class="label">Review pasted PGN or the current game.</div>
-        <div class="row" style="margin-top:6px;">
+        <div style="font-size:12px;color:#64748b">Review pasted PGN or the current game.</div>
+        <div class="row" style="margin-top:6px">
           <button id="reviewPgnBtn">Review PGN (from box)</button>
           <button id="reviewCurrentBtn">Review Current Game</button>
         </div>
-        <div id="reviewOut" style="margin-top:8px; max-height:280px; overflow:auto; background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:10px;"></div>
-      </div>
-
-      <!-- Analysis (best move line) -->
-      <div class="card" id="analysis">
-        <strong>Analysis</strong>
-        <div class="label">Use Suggest/AI Move or Analyze.</div>
-        <div class="row" style="margin-top:6px;">
-          <button id="suggestBtn">Suggest Move</button>
-          <button id="aiMoveBtn">AI Move</button>
-        </div>
+        <div id="reviewOut" style="margin-top:8px;max-height:280px;overflow:auto;background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:10px"></div>
       </div>
     </div>
   </div>
 
-  <!-- Promotion overlay -->
+  <!-- Promotion picker -->
   <div id="promoteOverlay" class="promote-overlay" role="dialog" aria-modal="true">
     <div class="promote-box">
-      <button class="promote-btn" data-piece="q" title="Promote to Queen">♕</button>
-      <button class="promote-btn" data-piece="r" title="Promote to Rook">♖</button>
-      <button class="promote-btn" data-piece="b" title="Promote to Bishop">♗</button>
-      <button class="promote-btn" data-piece="n" title="Promote to Knight">♘</button>
+      <button class="promote-btn" data-piece="q" title="Queen">♕</button>
+      <button class="promote-btn" data-piece="r" title="Rook">♖</button>
+      <button class="promote-btn" data-piece="b" title="Bishop">♗</button>
+      <button class="promote-btn" data-piece="n" title="Knight">♘</button>
     </div>
   </div>
 
@@ -200,81 +129,49 @@
     // ---------- Helpers ----------
     const pieceMap = {'P':'♙','N':'♘','B':'♗','R':'♖','Q':'♕','K':'♔','p':'♟','n':'♞','b':'♝','r':'♜','q':'♛','k':'♚'};
     const files = ['a','b','c','d','e','f','g','h'];
-    function idxToSquare(r,c){return files[c]+String(8-r);}
+    const boardEl = document.getElementById('board');
+    const statusEl = document.getElementById('status');
+    const analysisEl = document.getElementById('analysis');
+    const moveListEl = document.getElementById('moveList');
+    const overlay = document.getElementById('promoteOverlay');
+
+    function idxToSquare(r,c){ return files[c] + String(8 - r); }
     function fmt(ms){ if(ms==null)return'--:--'; ms=Math.max(0,Math.floor(ms)); const s=Math.floor(ms/1000), m=Math.floor(s/60), r=s%60; return `${String(m).padStart(2,'0')}:${String(r).padStart(2,'0')}`; }
-    function renderClocks(c){ if(!c)return; document.getElementById('twv').textContent=fmt(c.w_ms); document.getElementById('tbv').textContent=fmt(c.b_ms); }
+    function renderClocks(c){ if(!c) return; document.getElementById('twv').textContent=fmt(c.w_ms); document.getElementById('tbv').textContent=fmt(c.b_ms); }
     function cpToRatio(cp){ const x=Math.max(-800,Math.min(800,cp)); return 1/(1+Math.exp(-x/150)); }
     function setEval(val){
       const fill=document.getElementById('evalFill'), num=document.getElementById('evalNum');
       if(val==null){ fill.style.width='50%'; num.textContent='0.00'; return; }
-      if(typeof val==='object' && val.type==='mate'){ fill.style.width = (val.value>=0?'99.5%':'0.5%'); num.textContent = `#${val.value}`; return; }
+      if(typeof val==='object' && val.type==='mate'){ fill.style.width=(val.value>=0?'99.5%':'0.5%'); num.textContent=`#${val.value}`; return; }
       const r=cpToRatio(Number(val)||0); fill.style.width=`${(r*100).toFixed(1)}%`; num.textContent=((Number(val)||0)/100).toFixed(2);
     }
 
-    // ---------- DOM & State ----------
-    const boardEl  = document.getElementById('board');
-    const statusEl = document.getElementById('status');
-    const moveListEl = document.getElementById('moveList');
-    const analysisEl = document.getElementById('analysis');
-    const reviewOut = document.getElementById('reviewOut');
-    const overlay = document.getElementById('promoteOverlay');
-
+    // ---------- Parse FEN to letters + render ----------
     let fen = "{{ fen }}"; if(!fen || fen.indexOf('/')===-1) fen="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-    let gameOver = false, selected = null, legalTargets = new Set(), pollId = null;
-
-    // Track piece letters (for promotion detection)
     let letterBoard = [];
-    function buildLetterBoard(f) {
-      letterBoard = [];
-      const rows = f.split(' ')[0].split('/');
-      for (const row of rows) {
-        const out = [];
-        for (const ch of row) {
-          if (/[1-8]/.test(ch)) out.push(...Array(parseInt(ch,10)).fill(' '));
-          else out.push(ch);
-        }
-        letterBoard.push(out);
-      }
+    function buildLetterBoard(f){
+      letterBoard=[]; const rows=f.split(' ')[0].split('/');
+      for(const row of rows){ const out=[]; for(const ch of row){ if(/[1-8]/.test(ch)) out.push(...Array(parseInt(ch,10)).fill(' ')); else out.push(ch); } letterBoard.push(out); }
     }
-    function pieceAt(square) {
-      const fileIdx = files.indexOf(square[0]);
-      const rankIdx = 8 - parseInt(square[1],10);
-      if (rankIdx < 0 || rankIdx > 7 || fileIdx < 0 || fileIdx > 7) return ' ';
+    function pieceAt(square){
+      const fileIdx=files.indexOf(square[0]); const rankIdx=8-parseInt(square[1],10);
+      if(rankIdx<0||rankIdx>7||fileIdx<0||fileIdx>7) return ' ';
       return (letterBoard[rankIdx] && letterBoard[rankIdx][fileIdx]) || ' ';
     }
-
-    // ---------- Renderers ----------
     function renderBoard(f){
-      buildLetterBoard(f);
-      boardEl.innerHTML='';
-      // render grid and per-piece colors
-      const rows = f.split(' ')[0].split('/');
-      for (let r=0; r<8; r++){
-        const row = rows[r];
-        let c = 0;
-        for (const ch of row){
-          if (/[1-8]/.test(ch)) {
-            const n = parseInt(ch, 10);
-            for (let k=0;k<n;k++){
-              const d=document.createElement('div');
-              d.className='sq '+(((r)+c)%2===0?'light':'dark');
-              d.dataset.square=idxToSquare(r,c);
-              d.textContent=' ';
-              boardEl.appendChild(d);
-              c++;
-            }
-          } else {
-            const d=document.createElement('div');
-            d.className='sq '+(((r)+c)%2===0?'light':'dark');
-            d.dataset.square=idxToSquare(r,c);
-            d.textContent = pieceMap[ch] || ' ';
-            if (ch === ch.toUpperCase()) d.classList.add('pw'); else d.classList.add('pb');
-            boardEl.appendChild(d);
-            c++;
-          }
+      buildLetterBoard(f); boardEl.innerHTML='';
+      const rows=f.split(' ')[0].split('/');
+      for(let r=0;r<8;r++){
+        let c=0; for(const ch of rows[r]){
+          if(/[1-8]/.test(ch)){ const n=parseInt(ch,10); for(let k=0;k<n;k++){ const d=document.createElement('div'); d.className='sq '+(((r)+c)%2===0?'light':'dark'); d.dataset.square=idxToSquare(r,c); d.textContent=' '; boardEl.appendChild(d); c++; } }
+          else { const d=document.createElement('div'); d.className='sq '+(((r)+c)%2===0?'light':'dark'); d.dataset.square=idxToSquare(r,c); d.textContent=pieceMap[ch]||' '; d.classList.add(ch===ch.toUpperCase()?'pw':'pb'); boardEl.appendChild(d); c++; }
         }
       }
     }
+    renderBoard(fen);
+
+    // ---------- Flags & polling ----------
+    let gameOver=false, selected=null, legalTargets=new Set(), pollId=null;
     function applyFlags(flags){
       gameOver = !!(flags && flags.game_over);
       boardEl.querySelectorAll('.sq').forEach(el=>el.classList.remove('check'));
@@ -282,244 +179,159 @@
         const el=boardEl.querySelector(`[data-square="${flags.check_square}"]`); if(el) el.classList.add('check');
       }
       if(flags){
-        if(flags.mate) {
-          statusEl.textContent='Checkmate';
-          pauseClockFrontend();
-        } else if(flags.game_over) {
-          statusEl.textContent=`Game Over${flags.result?' ('+flags.result+')':''}`;
-          pauseClockFrontend();
-        } else if(flags.check) {
-          statusEl.textContent='Check';
-        }
+        if(flags.mate){ statusEl.textContent='Checkmate'; pauseClockFrontend(); }
+        else if(flags.game_over){ statusEl.textContent=`Game Over${flags.result?' ('+flags.result+')':''}`; pauseClockFrontend(); }
+        else if(flags.check){ statusEl.textContent='Check'; }
       }
     }
-    async function refreshMoveList(){
-      try{
-        const r=await fetch('/movelist'); const d=await r.json();
-        if(!d.success) return;
-        moveListEl.innerHTML='';
-        const arr=d.moves||[];
-        for(let i=0;i<arr.length;i+=2){
-          const li=document.createElement('li');
-          li.textContent = arr[i+1] ? `${arr[i]}  ${arr[i+1]}` : arr[i];
-          moveListEl.appendChild(li);
-        }
-        moveListEl.lastElementChild?.classList.add('current');
-      }catch{}
-    }
-
-    // ---------- Polling ----------
     async function pollState(){
-      try{
-        const r=await fetch('/state'); const d=await r.json();
-        if(d.flags) applyFlags(d.flags);
-        if(d.clocks){
-          renderClocks(d.clocks);
-          if(d.clocks.flagged){
-            gameOver=true; const res=d.flags&&d.flags.result?` (${d.flags.result})`:'';
-            statusEl.textContent='Game Over (time)'+res;
-            pauseClockFrontend();
-          }
-        }
+      try{ const r=await fetch('/state'); const d=await r.json();
+        if(d.flags) applyFlags(d.flags); if(d.clocks) renderClocks(d.clocks);
+        if(d.clocks && d.clocks.flagged){ gameOver=true; statusEl.textContent='Game Over (time)'; }
       }catch{}
     }
     function startPolling(){ if(!pollId) pollId=setInterval(pollState,500); }
     function stopPolling(){ if(pollId){ clearInterval(pollId); pollId=null; } }
+    startPolling();
 
     // ---------- Promotion picker ----------
-    function pickPromotion() {
-      return new Promise((resolve) => {
-        function cleanup(result) {
-          overlay.style.display = 'none';
+    function pickPromotion(){
+      return new Promise((resolve)=>{
+        function cleanup(result){ overlay.style.display='none';
           overlay.removeEventListener('click', onOverlay);
-          overlay.querySelectorAll('.promote-btn').forEach(b => b.removeEventListener('click', onPick));
+          overlay.querySelectorAll('.promote-btn').forEach(b=>b.removeEventListener('click', onPick));
           resolve(result);
         }
-        function onPick(e) {
-          const p = e.currentTarget.dataset.piece;
-          cleanup(p || null);
-        }
-        function onOverlay(e) { if (e.target === overlay) cleanup(null); }
-        overlay.querySelectorAll('.promote-btn').forEach(b => b.addEventListener('click', onPick));
+        function onPick(e){ cleanup(e.currentTarget.dataset.piece || null); }
+        function onOverlay(e){ if(e.target===overlay) cleanup(null); }
+        overlay.querySelectorAll('.promote-btn').forEach(b=>b.addEventListener('click', onPick));
         overlay.addEventListener('click', onOverlay);
-        overlay.style.display = 'flex';
+        overlay.style.display='flex';
       });
     }
 
-    // ---------- Click-to-move ----------
-    function clearHighlights(){
-      boardEl.querySelectorAll('.sq').forEach(el=>el.classList.remove('sel','target'));
-      legalTargets.clear();
-    }
+    // ---------- Legal + move submission ----------
+    function clearHighlights(){ boardEl.querySelectorAll('.sq').forEach(el=>el.classList.remove('sel','target')); legalTargets.clear(); }
     async function showLegalTargets(fromSquare, sourceEl){
-      try{
-        const r=await fetch(`/legal/${fromSquare}`); const d=await r.json();
-        clearHighlights(); sourceEl.classList.add('sel');
-        for(const t of d.legal){ legalTargets.add(t); const el=boardEl.querySelector(`[data-square="${t}"]`); if(el) el.classList.add('target'); }
+      try{ const r=await fetch(`/legal/${fromSquare}`); const d=await r.json();
+        clearHighlights(); sourceEl.classList.add('sel'); for(const t of d.legal){ legalTargets.add(t); const el=boardEl.querySelector(`[data-square="${t}"]`); if(el) el.classList.add('target'); }
+      }catch{}
+    }
+    async function refreshMoveList(){
+      try{ const r=await fetch('/movelist'); const d=await r.json();
+        moveListEl.innerHTML=''; const arr=d.moves||[];
+        for(let i=0;i<arr.length;i+=2){ const li=document.createElement('li'); li.textContent = arr[i+1] ? `${arr[i]}  ${arr[i+1]}` : arr[i]; moveListEl.appendChild(li); }
+        moveListEl.lastElementChild?.classList.add('current');
       }catch{}
     }
     async function submitMove(uci, promotion=null){
       try{
-        const r=await fetch('/move',{
-          method:'POST',
-          headers:{'Content-Type':'application/json'},
-          body: JSON.stringify(promotion ? { move: uci, promotion } : { move: uci })
-        });
+        const r=await fetch('/move',{method:'POST',headers:{'Content-Type':'application/json'},
+          body: JSON.stringify(promotion ? {move:uci, promotion} : {move:uci})});
         const d=await r.json();
-        if(!d.success){
-          if(d.flags) applyFlags(d.flags);
-          if(d.clocks) renderClocks(d.clocks);
-          alert(d.error||'Illegal move'); return false;
-        }
+        if(!d.success){ if(d.flags) applyFlags(d.flags); if(d.clocks) renderClocks(d.clocks); alert(d.error||'Illegal move'); return false; }
         fen=d.fen; renderBoard(fen); statusEl.textContent='Status: '+d.status;
-        if(d.flags) applyFlags(d.flags);
-        if(d.clocks) renderClocks(d.clocks);
-        await refreshMoveList();
-        return true;
+        if(d.flags) applyFlags(d.flags); if(d.clocks) renderClocks(d.clocks);
+        await refreshMoveList(); return true;
       }catch{ alert('Network error'); return false; }
     }
-
     boardEl.addEventListener('click', async (e)=>{
       if(gameOver) return;
-      const el=e.target.closest('.sq'); if(!el) return;
-      const sq=el.dataset.square;
+      const el=e.target.closest('.sq'); if(!el) return; const sq=el.dataset.square;
       if(!selected){ selected=sq; await showLegalTargets(sq,el); return; }
       if(legalTargets.has(sq)){
-        // promotion check
-        const p = pieceAt(selected);
-        const isWhitePawn = (p === 'P');
-        const isBlackPawn = (p === 'p');
-        const destRank = parseInt(sq[1], 10);
-        let promo = null;
-        if ((isWhitePawn && destRank === 8) || (isBlackPawn && destRank === 1)) {
-          promo = await pickPromotion();
-          if (!promo) { selected=null; clearHighlights(); return; }
-        }
-        await submitMove(selected + sq, promo);
+        const p=pieceAt(selected); const isW=(p==='P'), isB=(p==='p'); const rank=parseInt(sq[1],10);
+        let promo=null; if((isW&&rank===8)||(isB&&rank===1)){ promo=await pickPromotion(); if(!promo){ selected=null; clearHighlights(); return; } }
+        await submitMove(selected+sq, promo);
       }
       selected=null; clearHighlights();
     });
 
-    // ---------- Clock helpers ----------
-    async function pauseClockFrontend() {
-      try { await fetch('/clock/pause', { method:'POST' }); } catch {}
-    }
-
-    // ---------- Controls ----------
-    document.getElementById('resetBtn').addEventListener('click', async ()=>{
-      try{
-        const r=await fetch('/reset',{method:'POST'}); const d=await r.json();
-        fen=d.fen; renderBoard(fen); gameOver=false; selected=null; clearHighlights();
-        statusEl.textContent='Status: '+d.status;
-        if(d.flags) applyFlags(d.flags); if(d.clocks) renderClocks(d.clocks);
-        moveListEl.innerHTML=''; setEval(0);
-        reviewOut.innerHTML='';
-      }catch{}
-    });
+    // ---------- Clocks ----------
+    async function pauseClockFrontend(){ try{ await fetch('/clock/pause',{method:'POST'}); }catch{} }
     document.getElementById('applyTcBtn').addEventListener('click', async ()=>{
-      const [minutes,inc]=document.getElementById('tcPreset').value.split(',').map(Number);
-      const r=await fetch('/clock/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({minutes,increment:inc,turn:'w'})});
+      const [m,inc]=document.getElementById('tcPreset').value.split(',').map(Number);
+      const r=await fetch('/clock/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({minutes:m,increment:inc,turn:'w'})});
       const d=await r.json(); if(d.clocks) renderClocks(d.clocks);
     });
     document.getElementById('startClkBtn').addEventListener('click', async ()=>{
-      const r=await fetch('/clock/start',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
-      const d=await r.json(); if(d.clocks) renderClocks(d.clocks);
+      const r=await fetch('/clock/start',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}); const d=await r.json(); if(d.clocks) renderClocks(d.clocks);
     });
     document.getElementById('pauseClkBtn').addEventListener('click', async ()=>{
       const r=await fetch('/clock/pause',{method:'POST'}); const d=await r.json(); if(d.clocks) renderClocks(d.clocks);
     });
 
+    // ---------- Reset ----------
+    document.getElementById('resetBtn').addEventListener('click', async ()=>{
+      try{ const r=await fetch('/reset',{method:'POST'}); const d=await r.json();
+        fen=d.fen; renderBoard(fen); gameOver=false; selected=null; clearHighlights();
+        statusEl.textContent='Status: '+d.status; if(d.flags) applyFlags(d.flags); if(d.clocks) renderClocks(d.clocks);
+        moveListEl.innerHTML=''; setEval(0); document.getElementById('reviewOut').innerHTML='';
+      }catch{}
+    });
+
     // ---------- Engine UI ----------
+    const evalFill=document.getElementById('evalFill'), evalNum=document.getElementById('evalNum');
     async function quickAnalyze(){
-      try{
-        const r=await fetch('/ai/suggest',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({movetime_ms:200})});
-        const d=await r.json();
-        if(!d.success){ setEval(null); analysisEl.innerHTML='<strong>Analysis</strong><div class="label">Engine unavailable.</div>'; return; }
-        const s=d.suggestion;
-        if(s.eval){
-          if(s.eval.type==='mate') setEval({type:'mate',value:s.eval.value});
-          else setEval(s.eval.value);
-        } else setEval(null);
-        analysisEl.innerHTML=`
-          <strong>Analysis</strong>
-          <div><b>Best move:</b> ${s.bestmove || '(none)'}</div>
+      try{ const r=await fetch('/ai/suggest',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({movetime_ms:200})});
+        const d=await r.json(); if(!d.success){ setEval(null); analysisEl.innerHTML='<strong>Analysis</strong><div style="color:#64748b">Engine unavailable.</div>'; return; }
+        const s=d.suggestion; if(s.eval){ if(s.eval.type==='mate') setEval({type:'mate',value:s.eval.value}); else setEval(s.eval.value); } else setEval(null);
+        analysisEl.innerHTML = `<strong>Analysis</strong>
+          <div><b>Best move:</b> ${s.bestmove||'(none)'}</div>
           <div><b>Line (SAN):</b> ${(s.pv_san||[]).join(' ')}</div>
-          <div class="label">Engine: ${s.engine?.version || ''}</div>`;
+          <div style="color:#64748b">Engine: ${s.engine?.version || ''}</div>`;
       }catch{ setEval(null); }
     }
     document.getElementById('suggestBtn').addEventListener('click', quickAnalyze);
     document.getElementById('aiMoveBtn').addEventListener('click', async ()=>{
-      try{
-        const r=await fetch('/ai/play',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
-        const d=await r.json();
-        if(!d.success){ analysisEl.innerHTML='<strong>Analysis</strong><div class="label">Engine unavailable.</div>'; return; }
-        fen=d.fen; renderBoard(fen);
-        const s=await fetch('/state'); const ss=await s.json();
-        if(ss.flags) applyFlags(ss.flags); if(ss.clocks) renderClocks(ss.clocks);
-        await refreshMoveList(); await quickAnalyze();
+      try{ const r=await fetch('/ai/play',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}); const d=await r.json();
+        if(!d.success){ analysisEl.innerHTML='<strong>Analysis</strong><div style="color:#64748b">Engine unavailable.</div>'; return; }
+        fen=d.fen; renderBoard(fen); const s=await fetch('/state'); const ss=await s.json();
+        if(ss.flags) applyFlags(ss.flags); if(ss.clocks) renderClocks(ss.clocks); await refreshMoveList(); await quickAnalyze();
       }catch{}
     });
     document.getElementById('refreshEvalBtn').addEventListener('click', quickAnalyze);
 
-    // ---------- Import / Export ----------
+    // ---------- FEN / PGN ----------
     document.getElementById('loadFenBtn').addEventListener('click', async ()=>{
-      const fenTxt=document.getElementById('fenInput').value.trim();
-      if(!fenTxt){ alert('Paste a FEN first.'); return; }
+      const fenTxt=document.getElementById('fenInput').value.trim(); if(!fenTxt){ alert('Paste a FEN first.'); return; }
       const r=await fetch('/set_fen',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({fen:fenTxt})});
-      const d=await r.json();
-      if(!d.success){ alert(d.error||'Invalid FEN'); return; }
+      const d=await r.json(); if(!d.success){ alert(d.error||'Invalid FEN'); return; }
       fen=d.fen; renderBoard(fen); statusEl.textContent='Status: '+d.status; selected=null; clearHighlights();
       try{ const s=await fetch('/state'); const ss=await s.json(); if(ss.flags) applyFlags(ss.flags); if(ss.clocks) renderClocks(ss.clocks);}catch{}
       await refreshMoveList(); await quickAnalyze();
     });
     document.getElementById('copyFenBtn').addEventListener('click', async ()=>{ try{ await navigator.clipboard.writeText(fen); alert('Current FEN copied.'); }catch{ alert('Copy failed.'); }});
     document.getElementById('loadPgnBtn').addEventListener('click', async ()=>{
-      const pgnTxt=document.getElementById('pgnInput').value.trim();
-      if(!pgnTxt){ alert('Paste a PGN first.'); return; }
+      const pgnTxt=document.getElementById('pgnInput').value.trim(); if(!pgnTxt){ alert('Paste a PGN first.'); return; }
       const r=await fetch('/import_pgn',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pgn:pgnTxt})});
-      const d=await r.json();
-      if(!d.success){ alert(d.error||'Invalid PGN'); return; }
+      const d=await r.json(); if(!d.success){ alert(d.error||'Invalid PGN'); return; }
       fen=d.fen; renderBoard(fen); statusEl.textContent='Status: '+d.status; selected=null; clearHighlights();
-      await refreshMoveList();
-      try{ const s=await fetch('/state'); const ss=await s.json(); if(ss.flags) applyFlags(ss.flags); if(ss.clocks) renderClocks(ss.clocks);}catch{}
+      await refreshMoveList(); try{ const s=await fetch('/state'); const ss=await s.json(); if(ss.flags) applyFlags(ss.flags); if(ss.clocks) renderClocks(ss.clocks);}catch{}
       await quickAnalyze();
     });
 
     // ---------- Reviewer ----------
-    function scrollReviewIntoView(){
-      const card = document.getElementById('review');
-      card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }
+    function scrollReviewIntoView(){ document.getElementById('review').scrollIntoView({behavior:'smooth',block:'nearest'}); }
     document.getElementById('reviewPgnBtn').addEventListener('click', async ()=>{
-      const pgnTxt=document.getElementById('pgnInput').value.trim();
-      if(!pgnTxt){ alert('Paste a PGN first.'); return; }
-      reviewOut.innerHTML = '<div class="label">Running review…</div>';
+      const pgnTxt=document.getElementById('pgnInput').value.trim(); const out=document.getElementById('reviewOut');
+      if(!pgnTxt){ alert('Paste a PGN first.'); return; } out.innerHTML='<div style="color:#64748b">Running review…</div>';
       const r=await fetch('/review',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pgn:pgnTxt,movetime_ms:200})});
-      const d=await r.json();
-      if(!d.success){ reviewOut.innerHTML=`<div style="color:#e11d48">${d.error||'Review failed'}</div>`; return; }
-      reviewOut.innerHTML = d.html || '<div class="label">No report returned.</div>';
-      scrollReviewIntoView();
+      const d=await r.json(); if(!d.success){ out.innerHTML=`<div style="color:#e11d48">${d.error||'Review failed'}</div>`; return; }
+      out.innerHTML=d.html||'<div style="color:#64748b">No report.</div>'; scrollReviewIntoView();
     });
     document.getElementById('reviewCurrentBtn').addEventListener('click', async ()=>{
-      reviewOut.innerHTML = '<div class="label">Running review…</div>';
+      const out=document.getElementById('reviewOut'); out.innerHTML='<div style="color:#64748b">Running review…</div>';
       const r=await fetch('/review',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({movetime_ms:200})});
-      const d=await r.json();
-      if(!d.success){ reviewOut.innerHTML=`<div style="color:#e11d48">${d.error||'Review failed'}</div>`; return; }
-      reviewOut.innerHTML = d.html || '<div class="label">No report returned.</div>';
-      scrollReviewIntoView();
+      const d=await r.json(); if(!d.success){ out.innerHTML=`<div style="color:#e11d48">${d.error||'Review failed'}</div>`; return; }
+      out.innerHTML=d.html||'<div style="color:#64748b">No report.</div>'; scrollReviewIntoView();
     });
 
     // ---------- Init ----------
-    (async function bootstrap(){
+    (async function(){
       renderBoard(fen);
-      startPolling();
-      try{
-        const s=await fetch('/state'); const d=await s.json();
-        if(d.flags) applyFlags(d.flags);
-        if(d.clocks) renderClocks(d.clocks);
-      }catch{}
+      try{ const s=await fetch('/state'); const d=await s.json(); if(d.flags) applyFlags(d.flags); if(d.clocks) renderClocks(d.clocks); }catch{}
       await refreshMoveList();
-      await quickAnalyze();
     })();
   </script>
 </body>

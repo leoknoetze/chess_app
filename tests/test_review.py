@@ -1,4 +1,4 @@
-from review.reviewer import review_pgn
+from review.game_review import review_pgn
 
 SCHOLARS = """
 [Event "Test"]
